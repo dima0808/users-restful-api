@@ -1,18 +1,24 @@
 package com.company.usersrestfulapi.api.service;
 
+import com.company.usersrestfulapi.api.dto.UserDto;
 import com.company.usersrestfulapi.api.entity.User;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface UserService {
 
     List<User> getAllUsers();
 
-    User createUser(User user);
+    List<User> getUsersByBirthDateRange(LocalDate fromDate, LocalDate toDate);
 
-    User updateUserFields(Long id, User user);
+    User getUser(Long id);
 
-    User updateUser(Long id, User user);
+    User createUser(UserDto userDto);
+
+    User updateUserFields(Long id, UserDto userDto);
+
+    User updateUser(Long id, UserDto userDto);
 
     void deleteUser(Long id);
 }

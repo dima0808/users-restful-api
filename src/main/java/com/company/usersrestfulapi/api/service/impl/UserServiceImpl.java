@@ -1,15 +1,22 @@
 package com.company.usersrestfulapi.api.service.impl;
 
 import com.company.usersrestfulapi.api.dao.UserRepository;
+import com.company.usersrestfulapi.api.dto.UserDto;
 import com.company.usersrestfulapi.api.entity.User;
+import com.company.usersrestfulapi.api.service.UserException;
 import com.company.usersrestfulapi.api.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService {
+
+    @Value("${user.minAge}")
+    private int minAge;
 
     private final UserRepository userRepository;
 
@@ -24,49 +31,90 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User createUser(User user) {
+    public List<User> getUsersByBirthDateRange(LocalDate fromDate, LocalDate toDate) {
+        return userRepository.findByBirthDateBetween(fromDate, toDate);
+    }
+
+    @Override
+    public User getUser(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new UserException("user with id " + id + " not found"));
+    }
+
+    @Override
+    public User createUser(UserDto userDto) {
+
+        validateAge(userDto.findAge());
+
+        if (userRepository.existsByEmail(userDto.getEmail())) {
+            throw new UserException("email " + userDto.getEmail() + " already exists");
+        }
+
+        User user = User.builder()
+                .email(userDto.getEmail())
+                .firstName(userDto.getFirstName())
+                .secondName(userDto.getSecondName())
+                .birthDate(userDto.getBirthDate())
+                .address(userDto.getAddress())
+                .phoneNumber(userDto.getPhoneNumber())
+                .build();
+
         return userRepository.save(user);
     }
 
     @Override
-    public User updateUserFields(Long id, User user) {
-        User existingUser = userRepository.findById(id).orElse(null); // UserNotFoundException
+    public User updateUserFields(Long id, UserDto userDto) {
 
-        if (existingUser == null) {
-            return null;
+        validateAge(userDto.findAge());
+
+        if (userRepository.existsByEmail(userDto.getEmail())) {
+            throw new UserException("email " + userDto.getEmail() + " already exists");
         }
 
-        if (user.getEmail() != null) existingUser.setEmail(user.getEmail());
-        if (user.getFirstName() != null) existingUser.setFirstName(user.getFirstName());
-        if (user.getSecondName() != null) existingUser.setSecondName(user.getSecondName());
-        if (user.getBirthDate() != null) existingUser.setBirthDate(user.getBirthDate());
-        if (user.getAddress() != null) existingUser.setAddress(user.getAddress());
-        if (user.getPhoneNumber() != null) existingUser.setPhoneNumber(user.getPhoneNumber());
+        User existingUser = getUser(id);
+        if (userDto.getEmail() != null) existingUser.setEmail(userDto.getEmail());
+        if (userDto.getFirstName() != null) existingUser.setFirstName(userDto.getFirstName());
+        if (userDto.getSecondName() != null) existingUser.setSecondName(userDto.getSecondName());
+        if (userDto.getBirthDate() != null) existingUser.setBirthDate(userDto.getBirthDate());
+        if (userDto.getAddress() != null) existingUser.setAddress(userDto.getAddress());
+        if (userDto.getPhoneNumber() != null) existingUser.setPhoneNumber(userDto.getPhoneNumber());
 
         return userRepository.save(existingUser);
     }
 
     @Override
-    public User updateUser(Long id, User user) {
-        User existingUser = userRepository.findById(id).orElse(null); // UserNotFoundException
+    public User updateUser(Long id, UserDto userDto) {
 
-        if (existingUser == null) {
-            return null;
+        validateAge(userDto.findAge());
+
+        if (userRepository.existsByEmail(userDto.getEmail())) {
+            throw new UserException("email " + userDto.getEmail() + " already exists");
         }
 
-        existingUser.setEmail(user.getEmail());
-        existingUser.setFirstName(user.getFirstName());
-        existingUser.setSecondName(user.getSecondName());
-        existingUser.setBirthDate(user.getBirthDate());
-        existingUser.setAddress(user.getAddress());
-        existingUser.setPhoneNumber(user.getPhoneNumber());
+        User existingUser = getUser(id);
+        existingUser.setEmail(userDto.getEmail());
+        existingUser.setFirstName(userDto.getFirstName());
+        existingUser.setSecondName(userDto.getSecondName());
+        existingUser.setBirthDate(userDto.getBirthDate());
+        existingUser.setAddress(userDto.getAddress());
+        existingUser.setPhoneNumber(userDto.getPhoneNumber());
 
         return userRepository.save(existingUser);
     }
 
     @Override
     public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) return; // UserNotFoundException
+        if (!userRepository.existsById(id)) {
+            throw new UserException("user with id " + id + " not found");
+        }
         userRepository.deleteById(id);
+    }
+
+    private void validateAge(int age) {
+        if (age < 0 || age > 120) {
+            throw new UserException("invalid birth date");
+        } else if (age < minAge) {
+            throw new UserException("user is under the legal age (" + minAge + ")");
+        }
     }
 }
