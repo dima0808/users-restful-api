@@ -56,18 +56,12 @@ public class UserController {
     @PatchMapping("/{id}")
     public ResponseEntity<User> updateUserFields(@PathVariable("id") Long id, @RequestBody @Valid UserDto userDto) {
         User updatedUser = userService.updateUserFields(id, userDto);
-        if (updatedUser == null) {
-            return ResponseEntity.notFound().build(); // буде помилка, тре стерти
-        }
         return ResponseEntity.ok(updatedUser);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable("id") Long id, @RequestBody @Valid UserDto userDto) {
         User updatedUser = userService.updateUser(id, userDto);
-        if (updatedUser == null) {
-            return ResponseEntity.notFound().build(); // буде помилка, тре стерти
-        }
         return ResponseEntity.ok(updatedUser);
     }
 
